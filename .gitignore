@@ -1,0 +1,12 @@
+# отладочные кадры (перезаписываются на каждом прогоне)
+screenshot.jpg
+
+# результаты сборки — воссоздаются через build.ps1
+dist/
+neshumi.zip
+
+# системное
+Thumbs.db
+desktop.ini
+.DS_Store
+node_modules/

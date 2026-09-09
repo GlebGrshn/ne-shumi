@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>НЕ ШУМИ</title>
+<script src="/sdk.js" onerror="window.__SDK_LOCAL__=true"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; background:#07060c; touch-action:none; overscroll-behavior:none; }
+  body { font-family:'Segoe UI', system-ui, sans-serif; color:#cfc9de; user-select:none; -webkit-user-select:none; }
+  #cv { position:fixed; inset:0; width:100%; height:100%; display:block; }
+
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    background:rgba(7,6,12,.92); z-index:20; padding:24px; text-align:center; }
+  .hidden { display:none !important; }
+
+  .title { font-size:clamp(38px,9vw,72px); font-weight:800; letter-spacing:.28em; color:#e8e2f4;
+    text-shadow:0 0 24px rgba(120,40,60,.55); margin-bottom:6px; padding-left:.28em; }
+  .subtitle { font-size:clamp(12px,2.6vw,15px); letter-spacing:.14em; color:#7d7691; margin-bottom:38px; }
+
+  .btn { display:block; min-width:min(320px,80vw); margin:7px auto; padding:14px 26px; font-size:17px; letter-spacing:.06em;
+    background:#17141f; color:#d9d3e8; border:1px solid #322c44; border-radius:10px; cursor:pointer; font-family:inherit;
+    transition:background .15s,border-color .15s; }
+  .btn:hover { background:#201b2d; border-color:#4a4163; }
+  .btn:active { transform:translateY(1px); }
+  .btn.primary { background:#3d1420; border-color:#6e2438; color:#f4dfe4; font-weight:600; }
+  .btn.primary:hover { background:#4c1928; border-color:#8a2d46; }
+  .btn.ad { border-style:dashed; border-color:#3d5a35; color:#b9d8ae; font-size:15px; }
+  .btn.ad:hover { background:#18211a; }
+  .btn:disabled { opacity:.35; cursor:default; }
+  .btn .sub { display:block; font-size:12px; color:#7d7691; margin-top:3px; letter-spacing:.03em; }
+
+  .note { margin-top:22px; font-size:13px; color:#5e5871; max-width:440px; line-height:1.5; }
+
+  h2.head { font-size:clamp(22px,5vw,32px); letter-spacing:.18em; font-weight:700; color:#e0d9ef; margin-bottom:18px; }
+  .big-red { color:#d4576b; text-shadow:0 0 18px rgba(200,50,80,.5); }
+
+  /* HUD */
+  #hud { position:fixed; inset:0; z-index:10; pointer-events:none; display:none; }
+  #hud.on { display:block; }
+  #hudTop { position:absolute; top:calc(10px + env(safe-area-inset-top)); left:14px; right:14px; display:flex; align-items:flex-start; justify-content:space-between; }
+  #hudStats { font-size:16px; line-height:1.6; text-shadow:0 1px 3px #000; }
+  #lives { color:#d4576b; letter-spacing:2px; font-size:18px; }
+  #keysLbl,#nightLbl { color:#b6afc9; font-size:14px; letter-spacing:.08em; }
+  #nightLbl { color:#867fa0; }
+  #stamBar { width:104px; height:5px; margin-top:7px; background:rgba(10,8,16,.75); border:1px solid #322c44;
+    border-radius:3px; overflow:hidden; transition:opacity .4s; }
+  #stamBar.faded { opacity:.25; }
+  #stamFill { height:100%; width:100%; background:#7f8fbc; transition:width .08s linear, background .25s; }
+  #stamBar.low #stamFill { background:#c0413f; }
+  #hudBtns { display:flex; gap:8px; pointer-events:auto; }
+  .hbtn { width:46px; height:46px; border-radius:10px; background:rgba(23,20,31,.8); border:1px solid #322c44;
+    color:#cfc9de; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  #btnKeyAd { width:auto; padding:0 12px; font-size:13px; color:#b9d8ae; border-color:#3d5a35; border-style:dashed; letter-spacing:.02em; }
+  #hint { position:absolute; left:0; right:0; bottom:calc(96px + env(safe-area-inset-bottom)); text-align:center; font-size:15px;
+    color:#9089a8; letter-spacing:.06em; text-shadow:0 1px 4px #000; transition:opacity .8s; }
+  #toast { position:absolute; left:0; right:0; top:22%; text-align:center; font-size:19px; color:#e8dfc9; letter-spacing:.1em;
+    text-shadow:0 2px 8px #000; opacity:0; transition:opacity .3s; }
+  #btnAct { position:absolute; right:22px; bottom:calc(26px + env(safe-area-inset-bottom)); min-width:132px; padding:16px 20px;
+    font-size:16px; background:rgba(38,30,52,.88); border:1px solid #4a4163; border-radius:14px; color:#e5dff2;
+    pointer-events:auto; cursor:pointer; letter-spacing:.04em; display:none; }
+  #btnAct.on { display:block; }
+
+  /* Лидерборд */
+  #boardList { width:min(430px,92vw); margin:0 auto 20px; font-size:15px; }
+  .brow { display:flex; justify-content:space-between; padding:8px 14px; border-bottom:1px solid #201b2d; letter-spacing:.03em; }
+  .brow .nm { color:#a59dbd; }
+  .brow .fl { color:#7d7691; font-variant-numeric:tabular-nums; }
+  .brow.me { background:rgba(110,36,56,.25); border:1px solid #6e2438; border-radius:8px; }
+  .brow.me .nm, .brow.me .fl { color:#f4dfe4; font-weight:600; }
+  .brow.top .nm { color:#d4576b; }
+
+  /* Заглушка рекламы */
+  #adMock { z-index:40; background:#101018; }
+  #adMock .box { width:min(420px,86vw); padding:40px 24px; border:1px dashed #3a3550; border-radius:12px; color:#8a83a3; }
+
+  /* Вступление */
+  #introInner { max-width:min(620px,92vw); }
+  .il { opacity:0; transform:translateY(10px); animation:ilIn 1.1s ease-out forwards;
+    font-size:clamp(15px,3.2vw,19px); line-height:1.65; color:#b3abc7; margin-bottom:20px; letter-spacing:.02em; }
+  .il.dim { color:#8d86a3; }
+  .il.big { font-size:clamp(19px,4.4vw,27px); color:#e2dcf0; letter-spacing:.04em; margin-top:30px; }
+  .il.red { color:#d4576b; text-shadow:0 0 22px rgba(200,50,80,.45); font-weight:600; letter-spacing:.14em; margin-bottom:34px; }
+  .il[data-d="0"]{animation-delay:.2s} .il[data-d="1"]{animation-delay:1.5s}
+  .il[data-d="2"]{animation-delay:2.9s} .il[data-d="3"]{animation-delay:4.5s}
+  .il[data-d="4"]{animation-delay:6.2s} .il[data-d="5"]{animation-delay:7.9s}
+  .il[data-d="6"]{animation-delay:9.2s}
+  @keyframes ilIn { to { opacity:1; transform:translateY(0); } }
+  .il.hp { display:flex; align-items:center; gap:14px; justify-content:center; text-align:left;
+    border:1px solid #3d5a35; border-radius:12px; padding:14px 20px; background:rgba(24,33,26,.5); color:#c3ddb8; }
+  .hp-ico { font-size:30px; }
+  .hp-sub { color:#7f8f78; font-size:13px; }
+  #intro.fast .il { animation-delay:0s !important; }
+
+  #nsMod { font-size:clamp(15px,3.4vw,20px); letter-spacing:.34em; color:#d4a05a; margin-bottom:14px;
+    padding-left:.34em; text-shadow:0 0 18px rgba(190,130,50,.4); }
+
+  #transTimer { font-size:15px; color:#7d7691; margin-top:16px; letter-spacing:.08em; }
+  .beat { animation:beatIn .6s ease-out; }
+  @keyframes beatIn { from { transform:scale(.86); opacity:0; } to { transform:scale(1); opacity:1; } }
+  .praise { font-size:17px; color:#b9d8ae; margin:6px 0; letter-spacing:.04em; animation:beatIn .7s ease-out; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hudTop">
+    <div id="hudStats">
+      <div id="lives">&#9829;&#9829;&#9829;</div>
+      <div id="keysLbl">Ключи: 0/3</div>
+      <div id="nightLbl">Ночь 1</div>
+      <div id="stamBar"><div id="stamFill"></div></div>
+    </div>
+    <div id="hudBtns">
+      <button class="hbtn hidden" id="btnKeyAd">&#128270; ключ</button>
+      <button class="hbtn" id="btnMute">&#128266;</button>
+      <button class="hbtn" id="btnPause">&#10073;&#10073;</button>
+    </div>
+  </div>
+  <div id="hint"></div>
+  <div id="toast"></div>
+  <button id="btnAct"></button>
+</div>
+
+<!-- Меню -->
+<div class="screen" id="menu">
+  <div class="title">НЕ&nbsp;ШУМИ</div>
+  <div class="subtitle">он не видит тебя. он слышит.</div>
+  <button class="btn primary" id="btnPlay">Начать</button>
+  <button class="btn hidden" id="btnBasement">Спуститься в подвал<span class="sub" id="basementBest"></span></button>
+  <button class="btn" id="btnBoard">Те, кто заходил до тебя</button>
+  <div class="note" id="menuNote">Наушники. Серьёзно.</div>
+</div>
+
+<!-- Пауза -->
+<div class="screen hidden" id="pause">
+  <h2 class="head">ПАУЗА</h2>
+  <button class="btn" id="btnResume">Продолжить</button>
+  <button class="btn ad hidden" id="btnSneakersP">&#128095; Тихие кроссовки до конца ночи<span class="sub">бесшумный бег — за рекламу</span></button>
+  <button class="btn" id="btnQuit">Выйти в меню</button>
+</div>
+
+<!-- Вступление: сюжет + наушники -->
+<div class="screen hidden" id="intro">
+  <div id="introInner">
+    <div class="il" data-d="0">Дом на Полевой, 11 пустует четвёртый год.</div>
+    <div class="il" data-d="1">Последний жилец вышел ночью и не вернулся.</div>
+    <div class="il" data-d="2">Ключи от входной двери он спрятал внутри —<br>по одному в каждой комнате.</div>
+    <div class="il dim" data-d="3">Ты вошёл, чтобы забрать их.<br>Дверь за спиной закрылась сама.</div>
+    <div class="il big" data-d="4">Здесь кто-то есть.<br>Он не видит тебя.</div>
+    <div class="il big red" data-d="5">Он слышит.</div>
+    <div class="il hp" data-d="6">
+      <span class="hp-ico">&#127911;</span>
+      <span>Надень наушники.<br><span class="hp-sub">Без звука ты не поймёшь, где он. Это не совет.</span></span>
+    </div>
+  </div>
+  <button class="btn primary" id="btnIntroGo" style="margin-top:30px">Войти в дом</button>
+  <button class="btn" id="btnIntroSkip" style="min-width:auto;padding:8px 18px;font-size:13px;opacity:.5">Пропустить</button>
+</div>
+
+<!-- Экран начала ночи -->
+<div class="screen hidden" id="nightStart">
+  <h2 class="head" id="nsTitle">НОЧЬ 1</h2>
+  <div id="nsMod" class="hidden"></div>
+  <div class="note" id="nsText" style="margin-top:0;margin-bottom:26px;"></div>
+  <button class="btn primary" id="btnGo">Войти</button>
+  <button class="btn ad" id="btnSneakers">&#128095; Тихие кроссовки на эту ночь<span class="sub">бесшумный бег — за рекламу</span></button>
+</div>
+
+<!-- Ночь пройдена -->
+<div class="screen hidden" id="trans">
+  <h2 class="head beat" id="transTitle">НОЧЬ 1 ПРОЙДЕНА</h2>
+  <div class="note" id="transText"></div>
+  <button class="btn primary" id="btnNext">Дальше</button>
+  <div id="transTimer" class="hidden"></div>
+</div>
+
+<!-- Поражение -->
+<div class="screen hidden" id="gameover">
+  <h2 class="head big-red">ОН ТЕБЯ НАШЁЛ</h2>
+  <div class="note" id="goText" style="margin-top:0;margin-bottom:24px;"></div>
+  <button class="btn ad" id="btnLifeAd">&#10084; Ещё одна попытка<span class="sub">одна жизнь — за рекламу</span></button>
+  <button class="btn" id="btnRetry">Начать ночь заново</button>
+  <button class="btn" id="btnGoMenu">В меню</button>
+</div>
+
+<!-- Победа -->
+<div class="screen hidden" id="win">
+  <h2 class="head">ВОСЕМЬ НОЧЕЙ.<br>ДВЕРЬ ОТКРЫЛАСЬ.</h2>
+  <div class="note">За ней та же прихожая. Те же ключи на полу.<br>
+  Дом просто начал считать заново — и теперь он тебя знает.<br><br>
+  <span style="color:#d4a05a">Ночи продолжаются и дальше.</span> А под домом есть подвал:
+  этажи уходят вниз, пока ты жив.</div>
+  <button class="btn primary" id="btnWinNext">Ночь 9</button>
+  <button class="btn" id="btnWinMenu">В меню</button>
+</div>
+
+<!-- Итог подвала -->
+<div class="screen hidden" id="basementEnd">
+  <h2 class="head big-red" id="beTitle">ПОДВАЛ: ЭТАЖ 4</h2>
+  <div id="bePraise"></div>
+  <div class="note" id="beText"></div>
+  <button class="btn" id="btnBeBoard">Те, кто заходил до тебя</button>
+  <button class="btn primary" id="btnBeRetry">Спуститься снова</button>
+  <button class="btn" id="btnBeMenu">В меню</button>
+</div>
+
+<!-- Лидерборд -->
+<div class="screen hidden" id="board">
+  <h2 class="head">ТЕ, КТО ЗАХОДИЛ ДО ТЕБЯ</h2>
+  <div class="subtitle" style="margin-bottom:18px">этажи подвала, до которых они дошли</div>
+  <div id="boardList"></div>
+  <button class="btn" id="btnBoardBack">Назад</button>
+</div>
+
+<!-- Заглушка рекламы (локально) -->
+<div class="screen hidden" id="adMock">
+  <div class="box">
+    <div style="font-size:15px;letter-spacing:.1em;margin-bottom:10px;">[ РЕКЛАМА — ЗАГЛУШКА ]</div>
+    <div style="font-size:13px;">на Яндекс Играх здесь будет настоящий показ</div>
+    <div id="adMockTimer" style="font-size:26px;margin-top:16px;color:#cfc9de;">3</div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
